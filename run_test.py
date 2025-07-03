@@ -3,6 +3,15 @@ import os
 import csv
 import emailer
 
+# Print loaded environment right away
+print("\n🎯 ==============================")
+print(f"✅ RUNNING TEST SCRIPT ENVIRONMENT")
+print(f"- DRY_RUN: {emailer.DRY_RUN}")
+print(f"- TEST_EMAIL: {emailer.TEST_EMAIL}")
+print(f"- EMAIL_USER: {emailer.EMAIL_USER}")
+print(f"- EMAIL_PASSWORD: {'***' if emailer.EMAIL_PASSWORD else None}")
+print("🎯 ==============================\n")
+
 from emailer import send_email, send_summary_email
 from crm.followupboss_client import get_contacts
 from agents.email_agent_local import generate_email
@@ -19,8 +28,10 @@ def save_contact_log(person, email_copy, sms, call_script):
     with open("outreach_log.csv", "a", newline='', encoding='utf-8') as csvfile:
         fieldnames = ["ID", "Name", "Email(s)", "Phone(s)", "Email Copy", "SMS Copy", "Call Script Copy"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
         if not file_exists:
             writer.writeheader()
+
         writer.writerow({
             "ID": person.get("id"),
             "Name": person.get("name"),
@@ -40,14 +51,17 @@ def run():
         print("⚠️ No contacts found in FollowUpBoss.")
         return
 
+    # Limit to first 3 contacts
+    test_people = people[:3]
+
     total_contacts = 0
     emails_sent = 0
     skipped_contacts = 0
     recipients = []
 
-    print(f"✅ Retrieved {len(people)} total contacts.")
+    print(f"✅ Retrieved {len(test_people)} contacts for this test run.")
 
-    for person in people:
+    for person in test_people:
         total_contacts += 1
         name = person.get("name", "there")
         emails = ", ".join([e.get("value") for e in person.get("emails", [])])
@@ -77,25 +91,26 @@ def run():
         save_contact_log(person, email_copy, sms, call_script)
         print("✅ Logged this outreach plan to outreach_log.csv.")
 
+    # Build the summary email body
     summary_body = f"""
-    Lime Design Outreach Summary:
+    Lime Design Outreach Summary (TEST):
 
     - Contacts processed: {total_contacts}
     - Emails sent: {emails_sent}
     - Skipped (missing emails): {skipped_contacts}
 
     Recipients:
-    {"\n".join(recipients) if recipients else 'None'}
+    {"\n".join(recipients)}
 
     Thank you for using the Lime Design AI Sales Agent.
     """
 
     print("\n========================================")
-    print("✅ Outreach Summary:")
+    print("✅ Outreach Summary (TEST):")
     print(summary_body)
     print("========================================")
 
-    send_summary_email("Lime Design Outreach Summary Report", summary_body)
+    send_summary_email("Lime Design Outreach Summary Report (TEST)", summary_body)
 
 if __name__ == "__main__":
     run()
